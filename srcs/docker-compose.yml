@@ -1,55 +1,68 @@
-version: '3.4'
+version: '3.8'
+
 services:
-      nginx:
-        build:  ./requirements/nginx
+    nginx:
+        build:
+            context: ./requirements/nginx
+            dockerfile: Dockerfile
         container_name: nginx
-        volumes:
-            - wordpress:/var/www/html
         env_file: .env
-        restart : always
+        restart: always
         depends_on:
-            - wordpress
-        networks:
-            - inception_network
-      wordpress:
-        build:  ./requirements/wordpress
-        container_name:  wordpress
+        - wordpress
         volumes:
-            - wordpress:/var/www/html
-        env_file: .env
+        - wordpress_data:/var/www/html
         ports:
-            - "443:443"
-        restart:  always
-        depends_on:
-            - mariadb
+        - "443:443"
         networks:
-            - inception_network
-      mariadb:
-        build: ./requirements/mariadb
-        container_name: mariadb
-        volumes:
-            - mariadb:/var/lib/mysql
-        env_file: .env
-        restart:  always
-        networks:
-            - inception_network
-volumes:
+        - inception_network
+        
     wordpress:
-      driver: local
-      driver_opts:
-        type: "none"
-        o : "bind"
-        device: /home/zkaroune/data/wordpress/
+        build:
+            context: ./requirements/wordpress
+            dockerfile: Dockerfile
+        container_name: wordpress
+        ports:
+        - "9000:9000"
+        env_file: .env
+        depends_on:
+        - mariadb
+        volumes:
+        - wordpress_data:/var/www/html  # Shared volume for WordPress files
+        restart: always
+        networks:
+        - inception_network
+
     mariadb:
-      driver: local
-      driver_opts:
-        type: "none"
-        o : "bind"
-        device: /home/zkaroune/data/mariadb/
+        build:
+            context: ./requirements/mariadb
+            dockerfile: Dockerfile
+        container_name: mariadb
+        env_file: .env
+        volumes:
+        - mariadb_data:/var/lib/mysql
+        ports:
+        - "3306:3306"
+        restart: always
+        networks:
+        - inception_network
+
+    static_site:
+        build: ./requirements/bonus/static_site
+        image: static_site
+        container_name: static_site
+        networks:
+        - inception_network
+        ports:
+        - "81:81"
+        restart: always
+
+volumes:
+  wordpress_data:
+    driver: local
+  mariadb_data:
+    driver: local
+
 networks:
-    inception_network:
-    driver: bridge 
-        
-
-
-        
+  inception_network:
+    driver: bridge
